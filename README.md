@@ -1,2 +1,3 @@
-# distributed-scheduling-spring-boot-starter
-Enhance Spring @Scheduled annotation supports distributed
+# distributed-scheduling
+Spring @Scheduled enhanced for distributed scheduling.
+
