@@ -23,10 +23,11 @@ public class DemoApplication {
 <dependency>
     <groupId>com.gaoice</groupId>
     <artifactId>distributed-scheduling-spring-boot-starter</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 
 ## 新版本
 
+- v 1.1，支持直接使用 `@EnableDistributedScheduling` 注解，不必再手动引入 `@EnableScheduling` 注解。
 - v 1.0，增强 `@Scheduled` 注解，使其支持分布式的定时调度。
