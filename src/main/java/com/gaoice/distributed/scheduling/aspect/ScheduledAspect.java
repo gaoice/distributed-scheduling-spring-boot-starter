@@ -1,6 +1,7 @@
 package com.gaoice.distributed.scheduling.aspect;
 
 import com.gaoice.distributed.scheduling.DistributedHandler;
+import com.gaoice.distributed.scheduling.annotation.NonDistributed;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -34,20 +35,26 @@ public class ScheduledAspect {
     public void around(ProceedingJoinPoint point) throws Throwable {
         Date now = new Date();
         MethodSignature methodSignature = (MethodSignature) point.getSignature();
-        String cron = getCron(methodSignature);
-        if (StringUtils.isEmpty(cron)) {
-            LOGGER.warn("[distributed scheduling] only support cron like @Scheduled(cron=...).");
-        } else {
-            long nextTime = new CronSequenceGenerator(cron).next(now).getTime();
-            String key = appName + "-" + getClassMethodName(methodSignature) + "-" + nextTime;
-            long timeout = nextTime - now.getTime();
-            if (!distributedHandler.lock(key, timeout, TimeUnit.MILLISECONDS)) {
-                LOGGER.info("[distributed scheduling][{}] another thread has scheduled, this thread will cancel.", key);
-                return;
+        if (isDistributed(methodSignature)) {
+            String cron = getCron(methodSignature);
+            if (StringUtils.isEmpty(cron)) {
+                LOGGER.warn("[distributed scheduling] only support cron like @Scheduled(cron=...).");
+            } else {
+                long nextTime = new CronSequenceGenerator(cron).next(now).getTime();
+                String key = appName + "-" + getClassMethodName(methodSignature) + "-" + nextTime;
+                long timeout = nextTime - now.getTime();
+                if (!distributedHandler.lock(key, timeout, TimeUnit.MILLISECONDS)) {
+                    LOGGER.info("[distributed scheduling][{}] another thread has scheduled, this thread will cancel.", key);
+                    return;
+                }
+                LOGGER.info("[distributed scheduling][{}] locked {} milliseconds.", key, timeout);
             }
-            LOGGER.info("[distributed scheduling][{}] locked {} milliseconds.", key, timeout);
         }
         point.proceed();
+    }
+
+    public boolean isDistributed(MethodSignature methodSignature) {
+        return methodSignature.getMethod().getAnnotation(NonDistributed.class) == null;
     }
 
     public String getCron(MethodSignature methodSignature) {
